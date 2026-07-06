@@ -45,13 +45,14 @@ All of it lives behind a single Google sign-in, with a mandatory first-login onb
 
 ## The Agents Beneath the Hood, Course Concepts Demonstrated
 
-This submission demonstrates 3 of the 6 key course concepts (the required minimum):
+This submission demonstrates 4 of the 6 key course concepts:
 
 | Concept | Demonstrated In |
 |---|---|
 | Agent / Multi-Agent System (ADK) | Code, `adk.js`, `agents.js`, `intelligentRescheduler.js` |
 | Security Features | Code, `encryption.js`, `secureDataStore.js`, `tokenStore.js` |
-| Deployability | Code (`Dockerfile`, `.github/workflows/deploy.yml`) and Video |
+| Deployability | Code (`Dockerfile`, `.github/workflows/deploy.yml`) and Video, CI/CD pipeline deploying to Cloud Run shown live |
+| Antigravity | Video, shown building with it directly |
 
 ### 1. Multi-Agent System (ADK)
 AgentOS implements its own lightweight ADK-style runtime (`adk.js`), `FunctionTool`, `LlmAgent`, and `Workflow` primitives that mirror the Agent Development Kit's core abstractions. On top of it sit distinct agents (`RootOrchestrator`, `IntelligentReschedulerAgent`, `ReschedulingDecisionAgent`, job-search and email-triage agents) that each own a domain and communicate through a shared workflow layer rather than through tangled direct calls.
@@ -67,7 +68,10 @@ Job applications (cover letters, personal notes, salary expectations) and wellne
 Google OAuth tokens get their own treatment: they now persist in Firestore (Google-managed encryption at rest), reached only through server-side Application Default Credentials and never exposed to the client, so a signed-in session survives restarts and redeploys instead of living only in a single process's memory.
 
 ### 4. Deployability & CI/CD
-AgentOS ships with a multi-stage Docker build (Vite frontend build → lean Express runtime image) behind a full CI/CD pipeline: every push to `main` triggers a GitHub Actions workflow that builds the image and deploys it straight to Google Cloud Run, with no manual deploy step ever required. Cloud Run's autoscaling (scale-to-zero, multiple concurrent instances) meant a fresh instance had no way to know what an earlier one did in memory, so persistent state, most importantly a signed-in Google session, needed a real backing store rather than living in one process. That's what the Firestore integration solves: OAuth sessions now live outside any single instance, so the app scales and redeploys the way a production service should, without users ever noticing a restart happened.
+AgentOS ships with a multi-stage Docker build (Vite frontend build → lean Express runtime image) behind a full CI/CD pipeline: every push to `main` triggers a GitHub Actions workflow that builds the image and deploys it straight to Google Cloud Run, with no manual deploy step ever required. Cloud Run's autoscaling (scale-to-zero, multiple concurrent instances) meant a fresh instance had no way to know what an earlier one did in memory, so persistent state, most importantly a signed-in Google session, needed a real backing store rather than living in one process. That's what the Firestore integration solves: OAuth sessions now live outside any single instance, so the app scales and redeploys the way a production service should, without users ever noticing a restart happened. The demo video shows this pipeline running end-to-end: a push to `main` triggering GitHub Actions, and the new revision going live on Cloud Run.
+
+### 5. Antigravity
+Parts of AgentOS, including the job-search agent's tooling, were built directly inside Google's Antigravity IDE rather than a conventional editor, shown briefly in the demo video.
 
 ## How It Actually Changes a Day
 

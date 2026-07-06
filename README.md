@@ -72,7 +72,8 @@ AgentOS implements a **coordinated multi-agent system** with its own lightweight
 2. **Application Tracker Agent** (`app_tracker`): Monitors interview pipelines, follow-up timelines, and response rates.
 3. **Email Triage Agent** (`email_triage`): Filters Gmail inbox, identifies recruiter outreach, and prioritizes opportunities.
 4. **Calendar Planner Agent** (`calendar_planner`): Orchestrates wellness breaks, deep work blocks, and interview prep time around your schedule.
-5. **Wellness Coach Agent** (`wellness_coach`): Recommends hydration, exercise, and sleep targets based on your calendar.
+5. **Intelligent Rescheduler Agent** (`intelligent_rescheduler`): The core system coordinator. When important meetings, interviews, or tests overlap with existing wellness tasks, it calculates available calendar gaps and asks a dedicated LLM agent (`ReschedulingDecisionAgent`, configured with no hardcoded logic/tools) to determine how to dynamically move them.
+6. **Wellness Coach Agent** (`wellness_coach`): Recommends hydration, exercise, and sleep targets based on your calendar.
 
 ### Agent Skills (Course Concept: Agent Skills/Tools)
 *   `ResumeMatchingSkill`: Seniority-aware job-to-resume scoring engine (40-99% match).
