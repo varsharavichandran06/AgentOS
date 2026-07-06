@@ -12,6 +12,7 @@ import cron from 'node-cron';
 import { runCoordinatedOrchestration, ambientNotifications, clearNotifications } from './agents.js';
 import { saveJobApplication, getApplicationById, saveWellnessEntry, getWellnessHistory } from './secureDataStore.js';
 import { IntelligentReschedulerAgent, ConflictAnalysisSkill, decideRescheduleWithLLM } from './intelligentRescheduler.js';
+import { getTokens, setTokens, deleteTokens, hasTokens } from './tokenStore.js';
 
 dotenv.config();
 
@@ -1010,10 +1011,7 @@ function getUserPreferences(email) {
   return { ...DEFAULT_WELLNESS_PREFERENCES, ...stored };
 }
 
-// In-Memory Token Store for security (never persists OAuth credentials to disk!)
-const userTokensMemoryStore = new Map();
-
-function getOAuth2Client(email) {
+async function getOAuth2Client(email) {
   let clientId = process.env.GOOGLE_CLIENT_ID;
   let clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   let redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback';
@@ -1040,12 +1038,11 @@ function getOAuth2Client(email) {
       redirectUri
     );
     
-    const key = email || 'default';
-    if (userTokensMemoryStore.has(key)) {
-      const tokens = userTokensMemoryStore.get(key);
+    const tokens = await getTokens(email);
+    if (tokens) {
       oauth2Client.setCredentials(tokens);
     }
-    
+
     return oauth2Client;
   } catch (err) {
     console.error('[OAuth Client Creation Error]', err.message);
@@ -1072,19 +1069,18 @@ function isGoogleAuthError(err) {
 
 // Helper to get authenticated client, automatically handle token refresh notifications
 async function getAuthenticatedClient(email) {
-  const client = getOAuth2Client(email);
+  const client = await getOAuth2Client(email);
   if (!client) return null;
-  
+
   if (!client.credentials || !client.credentials.refresh_token) {
     return null;
   }
 
-  client.on('tokens', (tokens) => {
+  client.on('tokens', async (tokens) => {
     try {
-      const key = email || 'default';
-      const existingTokens = userTokensMemoryStore.get(key) || {};
+      const existingTokens = (await getTokens(email)) || {};
       const updatedTokens = { ...existingTokens, ...tokens };
-      userTokensMemoryStore.set(key, updatedTokens);
+      await setTokens(email, updatedTokens);
     } catch (err) {
       console.error('[Token Refresh Callback Error]', err.message);
     }
@@ -1094,13 +1090,13 @@ async function getAuthenticatedClient(email) {
 }
 
 // Check Google Calendar connection status for scoped email
-app.get('/api/auth/google/status', (req, res) => {
+app.get('/api/auth/google/status', async (req, res) => {
   const { email } = req.query;
   const hasConfig = (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) || fs.existsSync(CONFIG_PATH);
-  const hasTokens = userTokensMemoryStore.has(email || 'default');
+  const isAuthenticated = await hasTokens(email);
   res.json({
     configured: hasConfig,
-    authenticated: hasTokens
+    authenticated: isAuthenticated
   });
 });
 
@@ -1124,20 +1120,20 @@ app.post('/api/auth/google/config', (req, res) => {
 });
 
 // Disconnect/Revoke Google credentials for scoped email
-app.post('/api/auth/google/disconnect', (req, res) => {
+app.post('/api/auth/google/disconnect', async (req, res) => {
   const { email } = req.body;
   try {
-    userTokensMemoryStore.delete(email || 'default');
+    await deleteTokens(email);
     clearNotifications();
-    res.json({ success: true, message: "Google Credentials cleared from memory." });
+    res.json({ success: true, message: "Google Credentials cleared." });
   } catch (err) {
     res.status(500).json({ error: "Failed to clear credentials: " + err.message });
   }
 });
 
 // Generate authorization url with scopes for Calendar, Gmail, and Profile details
-app.get('/api/auth/google', (req, res) => {
-  const oauth2Client = getOAuth2Client();
+app.get('/api/auth/google', async (req, res) => {
+  const oauth2Client = await getOAuth2Client();
   if (!oauth2Client) {
     return res.status(400).json({ error: "Google OAuth is not configured on this server yet. Submit client credentials first." });
   }
@@ -1167,7 +1163,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
     return res.status(400).send("Authorization code missing in request.");
   }
   try {
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = await getOAuth2Client();
     if (!oauth2Client) {
       return res.status(400).send("Google OAuth Client config file not found.");
     }
@@ -1187,9 +1183,9 @@ app.get('/api/auth/google/callback', async (req, res) => {
       throw new Error("Could not retrieve user email from Google Profile.");
     }
 
-    // Save tokens securely in memory
-    userTokensMemoryStore.set(email, tokens);
-    console.log(`[Google Auth] Tokens stored in memory for ${email}`);
+    // Persist tokens (Firestore, backed by an in-memory cache)
+    await setTokens(email, tokens);
+    console.log(`[Google Auth] Tokens stored for ${email}`);
     
     // Ensure profile entry exists
     saveProfile(email, { name, picture, preferences: {} });
@@ -3379,7 +3375,7 @@ app.post('/api/orchestrator/dismiss', (req, res) => {
 });
 
 // Load profile preferences
-app.get('/api/profile/load', (req, res) => {
+app.get('/api/profile/load', async (req, res) => {
   const { email } = req.query;
   if (!email) {
     return res.status(400).json({ error: "Email parameter is required." });
@@ -3391,10 +3387,10 @@ app.get('/api/profile/load', (req, res) => {
     picture: '',
     preferences: {}
   };
-  
+
   // Also check if they have Google tokens connected
-  const isGoogleConnected = userTokensMemoryStore.has(email || 'default');
-  
+  const isGoogleConnected = await hasTokens(email);
+
   res.json({
     ...profile,
     isGoogleConnected
