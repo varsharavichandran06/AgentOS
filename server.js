@@ -491,13 +491,18 @@ app.post('/api/search', async (req, res) => {
     }
   }
   const activeCombos = combos.slice(0, 4);
-  const scriptPath = 'C:/Users/varsh/.gemini/antigravity-ide/mcp/jobspy-mcp-server/jobspy/main.py';
+  // Bundled with the repo at jobscraper/main.py (a thin CLI wrapper around the
+  // python-jobspy PyPI package) so this works in any environment, not just this
+  // machine. PYTHON_BIN lets the binary name be overridden; it otherwise defaults
+  // to what each OS actually ships (Windows: `python`, Linux containers: `python3`).
+  const scriptPath = path.join(__dirname, 'jobscraper', 'main.py');
+  const pythonBin = process.env.PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');
 
   const scrapePromises = activeCombos.map(combo => {
     return new Promise((resolve) => {
       const cleanSearchTitle = combo.title.replace(/"/g, '\\"');
       const cleanSearchLocation = combo.location.replace(/"/g, '\\"');
-      const cmd = `python "${scriptPath}" --site_name indeed,zip_recruiter --search_term "${cleanSearchTitle}" --location "${cleanSearchLocation}" --results_wanted 10 --format json`;
+      const cmd = `${pythonBin} "${scriptPath}" --site_name indeed,zip_recruiter --search_term "${cleanSearchTitle}" --location "${cleanSearchLocation}" --results_wanted 10 --format json`;
       
       console.log(`[API Multi-Scrape] Spawning sub-process: ${cmd}`);
       exec(cmd, { maxBuffer: 1024 * 1024 * 5, timeout: 45000 }, (error, stdout, stderr) => {
