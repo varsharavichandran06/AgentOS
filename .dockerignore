@@ -1,0 +1,33 @@
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+
+# Secrets — never let these enter the build context
+.env
+.env.*
+google_tokens.json
+google_config.json
+google_tokens_*.enc
+google_tokens_*.json
+*.enc
+.data/
+
+# Local-only data files (regenerated at runtime)
+user_profiles.json
+applied_jobs.json
+mock_calendar_events.json
+demo_calendar_events.json
+
+# Editor/OS/logs
+.vscode
+.idea
+.DS_Store
+*.log
+npm-debug.log*
+
+# Not needed in the image
+test_resume.pdf
+scratch/
+handover_documentation.md
