@@ -2173,6 +2173,17 @@ function App() {
     setEventEnd(formatToLocalInput(event.end));
   };
 
+  // eventStart/eventEnd are always "YYYY-MM-DDTHH:mm" from a datetime-local input — the
+  // user's intended local wall-clock time, with no timezone attached. Sending them via
+  // `new Date(...).toISOString()` would convert through the browser's local timezone into
+  // a true UTC instant; the server (Cloud Run, container clock = UTC) then reads that back
+  // with plain Date accessors and gets the wrong hour, silently shifting the event by the
+  // user's UTC offset. Every other event in the app (wellness/auto-scheduled tasks) is
+  // stored as this same naive local string, so sending it unmodified keeps all conflict/
+  // overlap detection comparing like with like regardless of what timezone the server runs in.
+  const toNaiveLocalISOString = (datetimeLocalValue) =>
+    datetimeLocalValue.length === 16 ? `${datetimeLocalValue}:00` : datetimeLocalValue;
+
   const handleCreateCalendarEvent = async (e) => {
     if (e) e.preventDefault();
     if (!eventTitle || !eventStart || !eventEnd) {
@@ -2188,15 +2199,15 @@ function App() {
         body: JSON.stringify({
           title: eventTitle,
           description: eventDescription,
-          start: new Date(eventStart).toISOString(),
-          end: new Date(eventEnd).toISOString(),
+          start: toNaiveLocalISOString(eventStart),
+          end: toNaiveLocalISOString(eventEnd),
           location: eventLocation,
           createMeet: eventCreateMeet,
           email: activeUser?.email,
           completedEvents: completedEvents
         })
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         showSystemToast("📅 Event created successfully!");
@@ -2292,8 +2303,8 @@ function App() {
           body: JSON.stringify({
             title: eventTitle,
             description: eventDescription,
-            start: new Date(eventStart).toISOString(),
-            end: new Date(eventEnd).toISOString(),
+            start: toNaiveLocalISOString(eventStart),
+            end: toNaiveLocalISOString(eventEnd),
             location: eventLocation,
             createMeet: eventCreateMeet,
             email: activeUser?.email,
