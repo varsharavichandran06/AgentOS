@@ -20,12 +20,11 @@ RUN apt-get update \
 COPY package*.json ./
 RUN npm install --only=production
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server.js ./
-COPY --from=builder /app/agents.js ./
-COPY --from=builder /app/adk.js ./
-COPY --from=builder /app/encryption.js ./
-COPY --from=builder /app/secureDataStore.js ./
-COPY --from=builder /app/intelligentRescheduler.js ./
+# Wildcard rather than an explicit per-file list: this has already broken the
+# production build twice (encryption.js/secureDataStore.js/intelligentRescheduler.js
+# missing, then tokenStore.js missing) because it's easy to add a new backend
+# module and forget to add a matching COPY line for it here.
+COPY --from=builder /app/*.js ./
 COPY --from=builder /app/jobscraper ./jobscraper
 
 RUN pip3 install --no-cache-dir --break-system-packages -r jobscraper/requirements.txt
