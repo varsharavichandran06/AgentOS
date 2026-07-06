@@ -348,12 +348,30 @@ app.post('/api/news', async (req, res) => {
   try {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=en-US&gl=US&ceid=US:en`;
     console.log(`[API News] Fetching RSS feed from: ${url}`);
-    
-    const response = await fetch(url);
+
+    // Google News rate-limits by IP reputation as much as by request headers — a
+    // realistic User-Agent doesn't fully fix requests from a shared datacenter IP
+    // (like Cloud Run's), but it's free to send and does help some of the time.
+    // One short retry absorbs the transient 503s seen in practice; if it still
+    // fails, degrade gracefully (empty list) rather than 500 the whole endpoint
+    // for what's a supplementary widget, not a core feature.
+    const fetchHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+    };
+
+    let response = await fetch(url, { headers: fetchHeaders });
     if (!response.ok) {
-      throw new Error(`Google News RSS returned status: ${response.status}`);
+      console.warn(`[API News] First attempt returned ${response.status}, retrying once...`);
+      await new Promise(r => setTimeout(r, 1000));
+      response = await fetch(url, { headers: fetchHeaders });
     }
-    
+
+    if (!response.ok) {
+      console.warn(`[API News] Google News RSS unavailable (status ${response.status}) after retry — returning empty result.`);
+      return res.json({ news: [] });
+    }
+
     const xmlText = await response.text();
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -3025,7 +3043,12 @@ async function triggerOrchestrationLoop(email) {
   if (preferences.newsKeyword) {
     try {
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(preferences.newsKeyword)}&hl=en-US&gl=US&ceid=US:en`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        }
+      });
       if (response.ok) {
         const xmlText = await response.text();
         const itemRegex = /<item>([\s\S]*?)<\/item>/g;
