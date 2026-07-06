@@ -24,7 +24,7 @@ Finding a new job is a demanding process that easily leads to burnout. AgentOS a
 ### 💼 Intelligent Job Search & Application Tracker
 *   **Multi-Engine Scraper & Ranker**: Searches multiple job boards concurrently based on your target titles, skills, and geographic preferences.
 *   **Custom Match Scoring**: Ranks search results using a seniority-aware algorithm that grades jobs from 40% to 99% based on matching keywords, resume details, and years of experience.
-*   **Zero-friction Auto-Apply**: Prompts application workflows, logs submissions to a history database, and sends styled confirmation emails automatically to employers.
+*   **Zero-friction Auto-Apply**: Prompts application workflows, logs submissions to a history database, and sends the applicant a styled confirmation email automatically via SMTP.
 *   **Intelligent Email Inbox**: Syncs your Gmail inbox to triage incoming mail, marking high-value recruiter updates, interview requests, and offers with high-priority tags.
 
 ### 📊 Habits & Lifestyle Widgets
@@ -51,12 +51,13 @@ AgentOS protects your sensitive personal data at rest using **AES-256-GCM encryp
 
 *   **Encrypted Job Applications**: Cover letters, personal notes, salary expectations, and contact info are encrypted before storage.
 *   **Protected Wellness Data**: Health metrics, heart rate, blood pressure, and fitness logs are encrypted.
-*   **Secure Credential Handling**: Google OAuth tokens never stored; API keys kept in `.env` and GitHub Secrets.
+*   **Secure Credential Handling**: Google OAuth tokens persist in Firestore (Google-managed encryption at rest), reached only through server-side Application Default Credentials, never exposed to the client. API keys are kept in `.env` locally and GitHub Secrets in production, never in source.
 *   **Zero-Knowledge Architecture**: All encryption happens client-side and on the server; encrypted data is never transmitted in plaintext.
 
 **Setup**:
 ```bash
-# Generate a secure encryption key (auto-generated on first run, but recommended to set manually)
+# ENCRYPTION_KEY is required, not optional — the app refuses to start without it.
+# Generate one with: openssl rand -hex 32
 ENCRYPTION_KEY=<your-256-bit-hex-key>
 ```
 
@@ -64,14 +65,15 @@ ENCRYPTION_KEY=<your-256-bit-hex-key>
 
 ## 🤖 Multi-Agent Architecture (Course Concept: ADK Multi-Agent System)
 
-AgentOS implements a **coordinated multi-agent system** using the Google Agent Development Kit (ADK):
+AgentOS implements a **coordinated multi-agent system** with its own lightweight runtime (`adk.js`) that mirrors the official Google Agent Development Kit's core abstractions (`FunctionTool`, `LlmAgent`, `Workflow`):
 
 ### Agent Layer
 1. **Job Search Agent** (`job_search`): Autonomously scans job boards, filters by seniority and skills, and surfaces matches.
 2. **Application Tracker Agent** (`app_tracker`): Monitors interview pipelines, follow-up timelines, and response rates.
 3. **Email Triage Agent** (`email_triage`): Filters Gmail inbox, identifies recruiter outreach, and prioritizes opportunities.
 4. **Calendar Planner Agent** (`calendar_planner`): Orchestrates wellness breaks, deep work blocks, and interview prep time around your schedule.
-5. **Wellness Coach Agent** (`wellness_coach`): Recommends hydration, exercise, and sleep targets based on your calendar.
+5. **Intelligent Rescheduler Agent** (`intelligent_rescheduler`): The core system coordinator. When important meetings, interviews, or tests overlap with existing wellness tasks, it calculates available calendar gaps and asks a dedicated LLM agent (`ReschedulingDecisionAgent`, configured with no hardcoded logic/tools) to determine how to dynamically move them.
+6. **Wellness Coach Agent** (`wellness_coach`): Recommends hydration, exercise, and sleep targets based on your calendar.
 
 ### Agent Skills (Course Concept: Agent Skills/Tools)
 *   `ResumeMatchingSkill`: Seniority-aware job-to-resume scoring engine (40-99% match).
@@ -188,7 +190,7 @@ npm run preview      # Test production build locally
 ## 🛡️ Privacy & Security Notes
 
 *   **Personal Data**: Job applications, wellness metrics, and financial data are encrypted before storage.
-*   **OAuth Tokens**: Never persisted; refreshed per session.
+*   **OAuth Tokens**: Persisted in Firestore (Google-managed encryption at rest), never exposed to the client; refreshed automatically per session.
 *   **API Keys**: Stored in `.env` locally and GitHub Secrets in production.
 *   **Google APIs**: Data flows directly between your browser and Google (no middleman).
 *   **User Consent**: Calendar and Gmail access requires explicit OAuth consent.
