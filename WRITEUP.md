@@ -1,5 +1,5 @@
 # AgentOS: The Ambient AI Agent for Your Career and Wellbeing
-### A multi-agent concierge that quietly protects your health while you chase your next job, designed to live in the background of your actual workday, not compete for your attention.
+### A multi-agent concierge that quietly protects your health while you chase your next job, designed to live in the background of your actual workday, not to compete for your attention.
 
 **Track: Concierge Agents**
 
@@ -9,7 +9,7 @@
 
 - **Live Demo (no login required, click "Try Demo"):** https://agentos-app-317546564195.us-central1.run.app
 - **Source Code:** https://github.com/varsharavichandran06/AgentOS
-- **Demo Video (YouTube, ≤5 min):** https://youtu.be/m66irfW4M8I
+- **Demo Video (YouTube):** https://youtu.be/m66irfW4M8I
 
 ---
 
@@ -25,7 +25,7 @@ That's the gap AgentOS fills.
 
 AgentOS was designed from the start to be a **desktop-resident, ambient companion**, something that installs once, runs quietly, and surfaces only when it has something useful to do: a wellness break it just protected, a conflict it just resolved, a recruiter email it just triaged. The goal is a tool you *stop noticing*, the way you stop noticing a good HVAC system, because it's just handling things.
 
-That intention shows up directly in the interface design. The dashboard's background is a stylized VS Code scene, not a decorative choice, but a deliberate one. It's meant to visually merge AgentOS into the environment where knowledge workers and job-seekers already spend their day: an editor, a terminal, a stack of tabs. The HUD-style glassmorphic panels float over that backdrop the way a well-designed widget should, that is, present, legible, and never in the way.
+That intention shows up directly in the interface design. The dashboard's background is a stylized VS Code scene, not a decorative choice, but a deliberate one. It's meant to visually merge AgentOS into the environment where knowledge workers and job-seekers already spend their day: an editor, a terminal, a stack of tabs. The HUD-style glassmorphic panels float over that backdrop the way a well-designed widget should be: present, legible, and never in the way.
 
 For this capstone, AgentOS is packaged and demonstrated as a web application, since that's the format judges can actually open and interact with without an installer. No desktop wrapper exists yet, but the architecture is already split the way one would need to be: a persistent Express backend that does all the agent orchestration, and a React frontend that's really just a thin control surface over it. That separation is what makes wrapping it in a native shell like Electron or Tauri later a straightforward next step rather than a rewrite, discussed further in What's Next.
 
@@ -33,11 +33,11 @@ For this capstone, AgentOS is packaged and demonstrated as a web application, si
 
 At its core, AgentOS is five cooperating agents wrapped in one dashboard:
 
-- **Calendar Planner Agent**, syncs bidirectionally with Google Calendar, understands your real commitments, and automatically schedules wellness blocks (deep-focus work, meals, a digestive walk, a workout) into whatever gaps are actually free, respecting your wake/sleep window and your diet and exercise preferences.
+- **Calendar Planner Agent** syncs bidirectionally with Google Calendar, understands your real commitments, and automatically schedules wellness blocks (deep-focus work, meals, a digestive walk, a workout) into whatever gaps are actually free, respecting your wake/sleep window and your diet and exercise preferences.
 - **Intelligent Rescheduler Agent**, the centerpiece. When a new "hard" event lands on top of a wellness block, this agent doesn't just delete the wellness task, it reasons about *where else it could go*, given real free time, and moves it there. Every Saturday, it also runs proactively for the entire upcoming week, and it catches up immediately on login if the week hasn't been scheduled yet.
-- **Job Search Agent**, scans job boards concurrently, scores matches against your resume and stated seniority using a weighted algorithm, and tracks every application through to follow-up.
-- **Email Triage Agent**, reads your Gmail inbox and classifies incoming mail (recruiter outreach, interview requests, offers, rejections, noise) so you see what matters first.
-- **Wellness & Habit Layer**, turns hydration, exercise minutes, and sleep targets into an interactive habit loop, reflected live in an animated avatar whose mood responds to what you've actually done that day.
+- **Job Search Agent** scans job boards concurrently, scores matches against your resume and stated seniority using a weighted algorithm, and tracks every application through to follow-up.
+- **Email Triage Agent** reads your Gmail inbox and classifies incoming mail (recruiter outreach, interview requests, offers, rejections, noise) so you see what matters first.
+- **Wellness & Habit Layer** turns hydration, exercise minutes, and sleep targets into an interactive habit loop, reflected live in an animated avatar whose mood responds to what you've actually done that day.
 
 All of it lives behind a single Google sign-in, with a mandatory first-login onboarding step that captures job, diet and exercise preferences before anything gets scheduled, so the very first week of suggestions is personalized, not generic.
 
@@ -53,7 +53,7 @@ This submission demonstrates 4 of the 6 key course concepts:
 | Antigravity | Video, shown building with it directly |
 
 ### 1. Multi-Agent System (ADK)
-AgentOS implements its own lightweight ADK-style runtime (`adk.js`), `FunctionTool`, `LlmAgent`, and `Workflow` primitives that mirror the Agent Development Kit's core abstractions. On top of it sit distinct agents (`RootOrchestrator`, `IntelligentReschedulerAgent`, `ReschedulingDecisionAgent`, job-search and email-triage agents) that each own a domain and communicate through a shared workflow layer rather than through tangled direct calls.
+AgentOS implements its own lightweight ADK-style runtime (`adk.js`): `FunctionTool`, `LlmAgent`, and `Workflow` primitives that mirror the Agent Development Kit's core abstractions. On top of it sit distinct agents (`RootOrchestrator`, `IntelligentReschedulerAgent`, `ReschedulingDecisionAgent`, job-search and email-triage agents) that each own a domain and communicate through a shared workflow layer rather than through tangled direct calls.
 
 ### 2. Real Reasoning, Not an If/Else Tree Wearing an Agent Costume
 This is the part I'm proudest of. Early in development, the "intelligent" reschedule logic was exactly what it sounds like it might be: a distance-minimizing heuristic that found the nearest free gap to the original time and moved the task there. It worked, but it wasn't intelligent, and it produced genuinely odd results (a workout bumped *backward* in time to make room for an interview, because the nearest gap happened to be earlier in the day).
@@ -77,17 +77,17 @@ Before AgentOS, a job search means: block out "gym time" that interview requests
 
 ## The Build Journey
 
-AgentOS was built iteratively, feature by feature, with a strong bias toward *actually running it* rather than assuming code was correct. That habit caught a few small things a code review alone would have missed, a demo-login reset that quietly re-seeded stale mock data instead of truly resetting state, a race between "auto-schedule the week" firing before onboarding preferences were saved, and an outdated Gemini model ID that needed swapping for the current one. Small, ordinary bugs, and fixing them as they surfaced is part of what "technical implementation quality" means in practice.
+AgentOS was built iteratively, feature by feature, with a strong bias toward *actually running it* rather than assuming code was correct. That habit caught a few small things a code review alone would have missed: a demo-login reset that quietly re-seeded stale mock data instead of truly resetting state, a race between "auto-schedule the week" firing before onboarding preferences were saved, and an outdated Gemini model ID that needed swapping for the current one. These were small, ordinary bugs. Fixing them as they surfaced is part of what "technical implementation quality" means in practice.
 
 The single biggest architectural change during the build was moving Google OAuth session storage into Firestore. The app originally kept each user's Google session in memory, which is simple and fast, but meant a session only ever existed on one running instance. The moment Cloud Run scaled to a second instance, redeployed, or spun down and back up, that session was gone and the user was silently signed out of Calendar and Gmail sync. Moving that state into Firestore fixed this at the root: sessions are now looked up from a shared, persistent store instead of a single process's memory, so calendar sync, rescheduling, and email triage all keep working through restarts, redeploys, and horizontal scaling the way a real production service needs to. It's the clearest example in this project of a decision driven by actually deploying the thing, not just running it locally, since a single long-lived process hides this entire class of problem.
 
 ## What's Next
 
 - **Autonomous application agent.** Right now the Job Search Agent finds and scores matches, but applying is still a manual step. The natural next step is closing that loop end-to-end: the agent finds the hiring manager's or recruiter's email for a matched role, drafts a tailored application/outreach email, and sends it automatically, so applying becomes something AgentOS does for you, not something it just prepares.
-- **Finish the database migration.** OAuth tokens now live in Firestore, but job/profile data is still file-based JSON, moving the rest over is the natural next step, especially deploying on GCP already.
+- **Finish the database migration.** OAuth tokens now live in Firestore, but job/profile data is still file-based JSON. Moving the rest over is the natural next step, especially since the app is already deployed on GCP.
 - **A true desktop build.** Wrapping the existing Express + React stack in Electron or Tauri would deliver on the original ambient-background vision directly, with a system-tray presence instead of a browser tab.
-- **MCP server integration**, so AgentOS's calendar, job-search, and email tools can be called by *other* agents and IDEs, not just its own dashboard.
-- **Multi-user support**, since the architecture already separates a user's data by email, the missing piece is real per-user persistence rather than a single shared demo store.
+- **MCP server integration.** This would let AgentOS's calendar, job-search, and email tools be called by *other* agents and IDEs, not just its own dashboard.
+- **Multi-user support.** The architecture already separates a user's data by email, so the missing piece is real per-user persistence rather than a single shared demo store.
 
 ## Closing
 
