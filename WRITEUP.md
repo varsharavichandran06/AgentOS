@@ -7,11 +7,9 @@
 
 ## Links
 
-- **Live Demo (no login required, click "Try Demo"):** https://agentos-app-m3liike6iq-uc.a.run.app
+- **Live Demo (no login required, click "Try Demo"):** https://agentos-app-317546564195.us-central1.run.app
 - **Source Code:** https://github.com/varsharavichandran06/AgentOS
-- **Demo Video (YouTube, ≤5 min):** `[ADD YOUTUBE LINK HERE BEFORE SUBMITTING]`
-
-*(Cover image and screenshots are attached via the Writeup's Media Gallery on Kaggle, suggested shots: the main dashboard with the glassmorphic tiles over the VS Code backdrop, the onboarding modal, a reschedule toast showing the agent's reasoning, and the avatar reacting to a completed wellness task.)*
+- **Demo Video (YouTube, ≤5 min):** https://youtu.be/m66irfW4M8I
 
 ---
 
@@ -19,7 +17,7 @@
 
 Job searching is one of the few life events that actively works against the habits you need most to survive it. You need sleep, but interview prep eats your evenings. You need to eat well, but you're triaging recruiter emails through lunch. You need focus time to sharpen your skills, but your calendar is a warzone of interview slots, follow-ups, and "quick syncs" that fragment every open hour into nothing.
 
-Most productivity tools make this worse, not better. They're another tab, another notification, another thing demanding your attention on top of the thing that's already draining it. What a job-seeker actually needs isn't a smarter to-do list, it's a quiet second brain that watches the calendar, understands what matters, and defends your health without being asked.
+Most productivity tools make this worse, not better. They're another tab, another notification, another thing demanding your attention on top of the thing that's already draining it. What a job-seeker actually needs isn't a smarter to-do list. It's a quiet second brain that watches the calendar, understands what matters, and defends your health without being asked.
 
 That's the gap AgentOS fills.
 
@@ -27,7 +25,7 @@ That's the gap AgentOS fills.
 
 AgentOS was designed from the start to be a **desktop-resident, ambient companion**, something that installs once, runs quietly, and surfaces only when it has something useful to do: a wellness break it just protected, a conflict it just resolved, a recruiter email it just triaged. The goal is a tool you *stop noticing*, the way you stop noticing a good HVAC system, because it's just handling things.
 
-That intention shows up directly in the interface design. The dashboard's background is a stylized VS Code scene, not a decorative choice, but a deliberate one. It's meant to visually merge AgentOS into the environment where knowledge workers and job-seekers already spend their day: an editor, a terminal, a stack of tabs. The HUD-style glassmorphic panels float over that backdrop the way a well-designed widget should, present, legible, and never in the way.
+That intention shows up directly in the interface design. The dashboard's background is a stylized VS Code scene, not a decorative choice, but a deliberate one. It's meant to visually merge AgentOS into the environment where knowledge workers and job-seekers already spend their day: an editor, a terminal, a stack of tabs. The HUD-style glassmorphic panels float over that backdrop the way a well-designed widget should, that is, present, legible, and never in the way.
 
 For this capstone, AgentOS is packaged and demonstrated as a web application, since that's the format judges can actually open and interact with without an installer. No desktop wrapper exists yet, but the architecture is already split the way one would need to be: a persistent Express backend that does all the agent orchestration, and a React frontend that's really just a thin control surface over it. That separation is what makes wrapping it in a native shell like Electron or Tauri later a straightforward next step rather than a rewrite, discussed further in What's Next.
 
@@ -58,9 +56,9 @@ This submission demonstrates 4 of the 6 key course concepts:
 AgentOS implements its own lightweight ADK-style runtime (`adk.js`), `FunctionTool`, `LlmAgent`, and `Workflow` primitives that mirror the Agent Development Kit's core abstractions. On top of it sit distinct agents (`RootOrchestrator`, `IntelligentReschedulerAgent`, `ReschedulingDecisionAgent`, job-search and email-triage agents) that each own a domain and communicate through a shared workflow layer rather than through tangled direct calls.
 
 ### 2. Real Reasoning, Not an If/Else Tree Wearing an Agent Costume
-This is the part I'm proudest of. Early in development, the "intelligent" reschedule logic was exactly what it sounds like it might be: a distance-minimizing heuristic, find the nearest free gap to the original time and move the task there. It worked, but it wasn't intelligent, and it produced genuinely odd results (a workout bumped *backward* in time to make room for an interview, because the nearest gap happened to be earlier in the day).
+This is the part I'm proudest of. Early in development, the "intelligent" reschedule logic was exactly what it sounds like it might be: a distance-minimizing heuristic that found the nearest free gap to the original time and moved the task there. It worked, but it wasn't intelligent, and it produced genuinely odd results (a workout bumped *backward* in time to make room for an interview, because the nearest gap happened to be earlier in the day).
 
-The fix was to actually hand the decision to Gemini: the server computes the *real* available gaps (that part is just arithmetic, you can't skip knowing what's actually free), then asks a `ReschedulingDecisionAgent`, deliberately configured with zero tools, so it can't defer to a hardcoded function, to reason about the specific task, its duration, and the conflict, and decide where it should go and why. The deterministic nearest-gap logic still exists, but only as a resilience fallback for when the model is unreachable, never as the primary decision-maker. Every reschedule now comes back with a one-sentence, model-generated justification ("moved your workout to 5pm since it fits right after your interview and still leaves the evening open") instead of silently reshuffling your day.
+The fix was to actually hand the decision to Gemini: the server computes the *real* available gaps (that part is just arithmetic, since you can't skip knowing what's actually free), then asks a `ReschedulingDecisionAgent`, deliberately configured with zero tools, so it can't defer to a hardcoded function, to reason about the specific task, its duration, and the conflict, and decide where it should go and why. The deterministic nearest-gap logic still exists, but only as a resilience fallback for when the model is unreachable, never as the primary decision-maker. Every reschedule now comes back with a one-sentence, model-generated justification ("moved your workout to 5pm since it fits right after your interview and still leaves the evening open") instead of silently reshuffling your day.
 
 ### 3. Security Features
 Job applications (cover letters, personal notes, salary expectations) and wellness records are encrypted at rest with AES-256-GCM, using a key supplied only through the environment at runtime, never hardcoded or committed to source; the app refuses to start without it.
@@ -81,7 +79,7 @@ Before AgentOS, a job search means: block out "gym time" that interview requests
 
 AgentOS was built iteratively, feature by feature, with a strong bias toward *actually running it* rather than assuming code was correct. That habit caught a few small things a code review alone would have missed, a demo-login reset that quietly re-seeded stale mock data instead of truly resetting state, a race between "auto-schedule the week" firing before onboarding preferences were saved, and an outdated Gemini model ID that needed swapping for the current one. Small, ordinary bugs, and fixing them as they surfaced is part of what "technical implementation quality" means in practice.
 
-The single biggest architectural change during the build was moving Google OAuth session storage into Firestore. The app originally kept each user's Google session in memory, which is simple and fast, but meant a session only ever existed on one running instance, the moment Cloud Run scaled to a second instance, redeployed, or spun down and back up, that session was gone and the user was silently signed out of Calendar and Gmail sync. Moving that state into Firestore fixed this at the root: sessions are now looked up from a shared, persistent store instead of a single process's memory, so calendar sync, rescheduling, and email triage all keep working through restarts, redeploys, and horizontal scaling the way a real production service needs to. It's the clearest example in this project of a decision driven by actually deploying the thing, not just running it locally, a single long-lived process hides this entire class of problem.
+The single biggest architectural change during the build was moving Google OAuth session storage into Firestore. The app originally kept each user's Google session in memory, which is simple and fast, but meant a session only ever existed on one running instance. The moment Cloud Run scaled to a second instance, redeployed, or spun down and back up, that session was gone and the user was silently signed out of Calendar and Gmail sync. Moving that state into Firestore fixed this at the root: sessions are now looked up from a shared, persistent store instead of a single process's memory, so calendar sync, rescheduling, and email triage all keep working through restarts, redeploys, and horizontal scaling the way a real production service needs to. It's the clearest example in this project of a decision driven by actually deploying the thing, not just running it locally, since a single long-lived process hides this entire class of problem.
 
 ## What's Next
 
